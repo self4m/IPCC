@@ -1,3 +1,11 @@
+# 更新
+
+- 20240506更新
+
+  添加 `ipcc_mac.py` 脚本，仅适用于 macOS 系统，无需使用 7z 工具  
+
+  双击 `start_ipcc_mac.command` 或在 Tetminal 中执行 `python3 ipcc_mac.py` 命令即可开始处理  
+
 # 一、操作说明
 
 使用 `Python` 提取 `ipsw` 固件中加密的镜像文件  
