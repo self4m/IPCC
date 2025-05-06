@@ -64,7 +64,7 @@ Python 官方下载地址：https://www.python.org/downloads/
 
   官网下载二进制安装包进行安装
 
-  不支持 `apt install p7zip` 安装，因为版本最后一次更新时间为2016-07-14，且不支持对 `dmg` 文件进行操作
+  包管理器版本过于老旧！包管理器版本过于老旧！包管理器版本过于老旧！
 
   ```bash
   # 下载二进制安装包到指定目录，以 7-Zip 24.09 (2024-11-29) 版本为例
@@ -85,10 +85,29 @@ Python 官方下载地址：https://www.python.org/downloads/
 
 - macOS
 
-  ```bash
-  brew install p7zip
-  ```
+  官网下载二进制安装包进行安装
+  
+  包管理器版本过于老旧！包管理器版本过于老旧！包管理器版本过于老旧！
 
+  ```bash
+  # 下载二进制安装包到指定目录，以 7-Zip 24.09 (2024-11-29) 版本为例
+  mkdir 7z && cd 7z && wget https://www.7-zip.org/a/7z2409-mac.tar.xz
+  
+  # 解压到当前目录的7z文件夹下
+  tar -xJf 7z2409-mac.tar.xz
+  
+  # 赋予文件可执行权限
+  chmod +x 7zz
+  
+  # 复制文件
+  sudo cp 7zz /usr/local/bin/
+  
+  # 删除压缩包等内容
+  cd .. && rm -rf 7z
+  
+  # 使用命令行时记得在设置 → 隐私与安全性 → 安全性 → 允许使用
+  ```
+  
   
 
 ## 4. IPSW 工具

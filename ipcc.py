@@ -19,8 +19,8 @@ def check_tools_usable():
     if not shutil.which("ipsw"):
         missing_tools.append("ipsw")
 
-    # 特别处理 7z，在 Linux 上用 7zz 检查
-    seven_zip_name = '7zz' if sys.platform.startswith('linux') else '7z'
+    # 特别处理 7z，在 windwos 上用 7z 检查
+    seven_zip_name = '7z' if sys.platform.startswith('win32') else '7zz'
     if not shutil.which(seven_zip_name):
         missing_tools.append(seven_zip_name)
 
@@ -120,9 +120,9 @@ def process_ipsw(ipsw_file):
 
         seven_zip_command = {
             'win32': '7z',
-            'darwin': '7z',
+            'darwin': '7zz',
             'linux': '7zz'
-        }.get(sys.platform, '7z')  # 默认为 '7z'
+        }.get(sys.platform, '7zz')  # 默认为 '7zz'
 
         subprocess.run(
             [
