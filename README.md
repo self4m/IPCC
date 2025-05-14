@@ -1,10 +1,20 @@
 # 更新
 
+- 20240514更新
+
+  原 `ipcc.py` 脚本存档为 `ipcc_v1.py`  
+  原 `ipcc_mac.py` 脚本存档为 `ipcc_mac_v1.py`
+
+  更新 `ipcc.py` `ipcc_mac.py` 脚本：
+  - 修改 `ipcc` 文件存储路径为 `ipcc` 目录下 `ipsw` 固件同名文件夹中
+  - 修改原有文件删除逻辑， `ipcc` 文件生成后立即删除所有工作文件
+  - 新增跳过处理逻辑，如果 `ipcc` 目录下已存在 `ipsw` 固件同名文件夹则跳过处理该固件
+----
 - 20240506更新
 
-  添加 `ipcc_mac.py` 脚本，仅适用于 macOS 系统，无需使用 7z 工具  
+  添加 `ipcc_mac.py` 脚本，仅适用于 macOS 系统，无需使用 7z 工具    
 
-  双击 `start_ipcc_mac.command` 或在 Tetminal 中执行 `python3 ipcc_mac.py` 命令即可开始处理  
+  双击 `start_ipcc_mac.command` 或在 Tetminal 中执行 `python3 ipcc_mac.py` 命令即可开始处理   
 
 # 一、操作说明
 
@@ -166,7 +176,7 @@ git clone https://github.com/self4m/ipcc.git
      >linux macOS 在 Tetminal 中执行 `python3 ipcc.py` 命令即可开始处理
 
 4. 等待脚本执行完毕
-5. 打包的 `ipcc` 文件存储于 `ipsw`  固件同名文件夹中的 `ipcc`  目录下
+5. 打包的 `ipcc` 文件存储于 `ipcc` 目录下的 `ipsw` 固件同名文件夹中
 # 四、注意
-1. 每次执行脚本都会删除上一次生成的所有文件，如果存在的话
+1. 如果 `ipcc` 目录下已存在 `ipsw` 固件同名文件夹则跳过处理该固件
 2. 如果在脚本执行提取以及解密 aea 文件时发生错误，请检查剩余空间是否充足或再次尝试

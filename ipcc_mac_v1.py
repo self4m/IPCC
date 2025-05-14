@@ -29,14 +29,31 @@ def process_ipsw(ipsw_file):
 
     ipsw_basename = display_name.replace(".ipsw", "")
     base_dir = os.path.join(os.getcwd(), ipsw_basename)
-    ipcc_output_dir = os.path.join(os.getcwd(), "ipcc", ipsw_basename)
+    ipcc_output_dir = os.path.join(base_dir, "ipcc")
 
-    # 如果 ipcc_output_dir 已存在，说明已处理过，跳过该文件
-    if os.path.exists(ipcc_output_dir):
-        print(f"[{display_name}] 该文件在 ipcc 文件夹中已存在处理完成的内容，跳过处理。")
-        return
+    try:
+        os.makedirs(base_dir, exist_ok=True)
+    except Exception as e:
+        print(f"创建目录失败: {e}")
+        sys.exit(1)
 
-    os.makedirs(ipcc_output_dir, exist_ok=True)
+    # 清除旧的 ipcc 目录
+    try:
+        if os.path.exists(ipcc_output_dir):
+            shutil.rmtree(ipcc_output_dir)
+        os.makedirs(ipcc_output_dir)
+    except Exception as e:
+        print(f"[{display_name}] 清理 ipcc 目录失败: {e}")
+        sys.exit(1)
+
+    # 清理旧的 .aea 和 .dmg 文件
+    for pattern in ['*.aea', '*.dmg']:
+        for d in glob.glob(os.path.join(base_dir, pattern)):
+            try:
+                os.remove(d)
+            except Exception as e:
+                print(f"无法删除文件 {d}: {e}")
+                sys.exit(1)
 
     try:
         print(f"[{display_name}] 解压 AEA 文件...")
@@ -123,11 +140,6 @@ def process_ipsw(ipsw_file):
             )
 
         print(f"[{display_name}] ipcc 文件已打包完成")
-
-        try:
-            shutil.rmtree(base_dir)
-        except Exception as e:
-            print(f"[{display_name}] 删除中间目录失败: {e}")
 
     except subprocess.CalledProcessError as e:
         print(f"[{ipsw_basename}] 命令执行失败: {e.cmd}")
