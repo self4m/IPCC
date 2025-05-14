@@ -57,14 +57,16 @@ def process_ipsw(ipsw_file):
             stderr=subprocess.STDOUT
         )
 
-        dmg_files = glob.glob(os.path.join(base_dir, '*.dmg'))
-        if not dmg_files:
+        os.remove(aea_path)
+
+        dmg_file = next((f for f in glob.glob(os.path.join(base_dir, "*.dmg"))), None)
+        if not dmg_file:
             print(f"[{ipsw_basename}] 解密失败，未生成 DMG 文件")
             return
 
         print(f"[{ipsw_basename}] 挂载 DMG 镜像...")
         mount_result = subprocess.run(
-            ["hdiutil", "attach", "-plist", "-nobrowse", "-noverify", "-readonly", dmg_files[0]],
+            ["hdiutil", "attach", "-plist", "-nobrowse", "-noverify", "-readonly", dmg_file],
             capture_output=True,
             check=True
         )
@@ -121,18 +123,17 @@ def process_ipsw(ipsw_file):
                 stderr=subprocess.STDOUT,
                 check=False
             )
+            os.remove(dmg_file)
 
         print(f"[{display_name}] ipcc 文件已打包完成")
 
-        try:
-            shutil.rmtree(base_dir)
-        except Exception as e:
-            print(f"[{display_name}] 删除中间目录失败: {e}")
+        shutil.rmtree(base_dir)
 
     except subprocess.CalledProcessError as e:
-        print(f"[{ipsw_basename}] 命令执行失败: {e.cmd}")
+        print(f"[{display_name}] 子进程命令执行失败: {e.cmd}")
+        shutil.rmtree(ipcc_output_dir)
     except Exception as e:
-        print(f"[{ipsw_basename}] 处理异常: {str(e)}")
+        print(f"[{display_name}] 处理异常: {e}")
 
 def process_all_ipsw():
     ipsw_files = [

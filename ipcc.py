@@ -68,6 +68,8 @@ def process_ipsw(ipsw_file):
             stderr=subprocess.STDOUT
         )
 
+        os.remove(aea_path)
+
         # 查找解密后的 DMG 文件
         dmg_file = next((f for f in glob.glob(os.path.join(base_dir, "*.dmg"))), None)
         if not dmg_file:
@@ -96,6 +98,7 @@ def process_ipsw(ipsw_file):
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
+        os.remove(dmg_file)
 
         carrier_root = os.path.join(temp_extract_dir, "System", "Library", "Carrier Bundles", "iPhone")
         if not os.path.exists(carrier_root):
@@ -151,13 +154,11 @@ def process_ipsw(ipsw_file):
 
         print(f"[{display_name}] 所有 ipcc 文件打包完成")
 
-        try:
-            shutil.rmtree(base_dir)
-        except Exception as e:
-            print(f"[{display_name}] 删除中间目录失败: {e}")
+        shutil.rmtree(base_dir)
 
     except subprocess.CalledProcessError as e:
         print(f"[{display_name}] 子进程命令执行失败: {e.cmd}")
+        shutil.rmtree(ipcc_output_dir)
     except Exception as e:
         print(f"[{display_name}] 处理异常: {e}")
 
