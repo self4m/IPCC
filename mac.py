@@ -1,39 +1,27 @@
-import glob
-import multiprocessing
 import os
-import shutil
 import sys
-import subprocess
-import tempfile
 import zipfile
+import subprocess
+import multiprocessing
+import plistlib
+import glob
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import shutil
+import tempfile
 
 MAX_JOBS = int(multiprocessing.cpu_count() / 2)
 work_dir = str(os.getcwd())
 
-if sys.platform.startswith("win"):
-    seven_zip_command = "7z"
-else:
-    seven_zip_command = "7zz"
-
-
 def check_tools_usable():
-    print("==== 开始依赖工具检查 ====")
-    missing_tools = []
-
-    if not shutil.which("ipsw"):
-        missing_tools.append("ipsw")
-    if not shutil.which(seven_zip_command):
-        missing_tools.append(seven_zip_command)
-
-    if missing_tools:
-        print("[ERROR] 依赖工具检查未通过，请先安装以下依赖工具：")
-        for tool in missing_tools:
-            print(f"  - {tool} 工具不可用")
+    if sys.platform != 'darwin':
+        print("[ERROR] 此脚本仅适用于 macOS 系统")
         sys.exit(1)
 
-    print("==== 依赖工具检查通过 ====")
+    if not shutil.which('ipsw'):
+        print("[ERROR] ipsw 工具未找到，请安装后再运行程序。")
+        sys.exit(1)
 
+    print("==== 依赖工具检查通过继续操作 ====")
 
 def process_ipsw(ipsw_file):
     ipsw_file_name = str(os.path.basename(ipsw_file).replace(".ipsw", ""))
@@ -82,10 +70,6 @@ def process_ipsw(ipsw_file):
                             stdout=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL
                         )
-                        try:
-                            os.remove(aea_file_path)
-                        except Exception:
-                            pass
                         dmg_file_path = os.path.join(base_detail_dir, aea_file_name.replace(".aea", ""))
                     except subprocess.CalledProcessError:
                         print(f"[ERROR] [{ipsw_file_name}] .aea 文件解密失败")
@@ -93,60 +77,62 @@ def process_ipsw(ipsw_file):
                 except Exception as e:
                     print(f"[ERROR] [{ipsw_file_name}] 解压 .aea 文件失败: {e}")
                     return
-
-
         if not os.path.exists(dmg_file_path):
-            print(f"[{ipsw_file_name}] 提取失败，未生成或提取到 .dmg 文件")
+            print(f"[{ipsw_file_name}] 解密失败，未生成 .dmg 文件")
             return
 
         print(f"[{ipsw_file_name}] 开始提取运营商配置文件...")
-        temp_extract_dir = os.path.join(base_detail_dir, "_temp")
-        os.makedirs(temp_extract_dir, exist_ok=True)
-
+        mount_dir = tempfile.mkdtemp(prefix="ipsw_mount_")
         try:
             subprocess.run(
-                [
-                    seven_zip_command, 'x', dmg_file_path,
-                    'System/Library/Carrier Bundles/iPhone/*.bundle/*',
-                    f'-o{temp_extract_dir}',
-                    '-y', '-r'
-                ],
-                check=True,
+                ["hdiutil", "attach", "-nobrowse", "-noverify", "-readonly","-mountpoint", mount_dir, dmg_file_path],
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
+                check=True
             )
         except subprocess.CalledProcessError:
-            print(f"[ERROR] [{ipsw_file_name}] 运营商配置文件提取失败")
+            print(f"[ERROR] [{ipsw_file_name}] 挂载 .dmg 镜像失败")
             return
 
+        try:
+            carrier_path = os.path.join(mount_dir, "System", "Library", "Carrier Bundles", "iPhone")
+            if not os.path.isdir(carrier_path):
+                print(f"[{ipsw_file_name}] 未找到运营商配置文件目录")
+                return
 
-        carrier_path = os.path.join(temp_extract_dir, "System", "Library", "Carrier Bundles", "iPhone")
-        if not os.path.exists(carrier_path):
-            print(f"[{ipsw_file_name}] 未找到运营商配置文件目录")
-            return
+            for bundle_name in os.listdir(carrier_path):
+                bundle_path = os.path.join(carrier_path, bundle_name)
+                if not os.path.isdir(bundle_path) or not bundle_name.endswith('.bundle'):
+                    continue
 
-        for bundle_name in os.listdir(carrier_path):
-            bundle_path = os.path.join(carrier_path, bundle_name)
-            if not os.path.isdir(bundle_path) or not bundle_name.endswith('.bundle'):
-                continue
+                ipcc_file = os.path.join(ipcc_output_dir, f"{bundle_name}.ipcc")
+                print(f"[{ipsw_file_name}] 生成 {bundle_name}.ipcc")
 
-            ipcc_file = os.path.join(ipcc_output_dir, f"{bundle_name}.ipcc")
-            print(f"[{ipsw_file_name}] 生成 {bundle_name}.ipcc...")
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    payload_dir = os.path.join(temp_dir, "Payload")
+                    os.makedirs(payload_dir, exist_ok=True)
+                    shutil.copytree(bundle_path, os.path.join(payload_dir, bundle_name))
 
-            with tempfile.TemporaryDirectory() as temp_dir:
-                payload_dir = os.path.join(temp_dir, "Payload")
-                os.makedirs(payload_dir, exist_ok=True)
-                shutil.copytree(bundle_path, os.path.join(payload_dir, bundle_name))
+                    with zipfile.ZipFile(ipcc_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                        for root, _, files in os.walk(temp_dir):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                arc_name = os.path.relpath(file_path, temp_dir)
+                                zipf.write(file_path, arc_name)
 
-                with zipfile.ZipFile(ipcc_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    for root, _, files in os.walk(temp_dir):
-                        for file in files:
-                            file_path = os.path.join(root, file)
-                            arc_name = os.path.relpath(file_path, temp_dir)
-                            zipf.write(file_path, arc_name)
-
-        print(f"[{ipsw_file_name}] ipcc 文件已打包完成")
-        shutil.rmtree(base_detail_dir, ignore_errors=True)
+            print(f"[{ipsw_file_name}] ipcc 文件已打包完成")
+            shutil.rmtree(base_detail_dir, ignore_errors=True)
+        finally:
+            print(f"[{ipsw_file_name}] 卸载 .dmg...")
+            try:
+                subprocess.run(
+                    ["hdiutil", "detach", mount_dir, "-force"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                    check=False
+                )
+            except subprocess.CalledProcessError as e:
+                print(f"[{ipsw_file_name}] 卸载 .dmg 文件失败，请手动卸载")
     except Exception as e:
         print(f"[{ipsw_file_name}] 处理异常: {e}")
 
@@ -163,17 +149,18 @@ def process_all_ipsw():
 
     with ThreadPoolExecutor(max_workers=MAX_JOBS) as executor:
         futures = {executor.submit(process_ipsw, f): f for f in ipsw_files}
+
         for future in as_completed(futures):
             file = futures[future]
             try:
                 future.result()
             except Exception as e:
-                print(f"[{os.path.basename(file)}] 处理失败: {e}")
+                print(f"[{os.path.basename(file)}] 处理失败: {str(e)}")
 
 if __name__ == "__main__":
     try:
         check_tools_usable()
         process_all_ipsw()
     except Exception as e:
-        print(f"发生错误: {e}")
+        print(f"发生错误: {str(e)}")
         sys.exit(1)
