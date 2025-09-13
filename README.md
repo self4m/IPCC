@@ -151,12 +151,15 @@ git clone https://github.com/self4m/ipcc.git
 3. 执行脚本处理固件
 
    - macOS系统可以双击 `start.command` 或通过命令行运行 `python3 ipcc.py` 命令即可开始处理 
+     > 不使用7z工具的 macOS 系统可以双击 `start_mac.command` 或通过命令行运行 `python3 mac.py` 命令即可开始处理 
 
    - windows系统可以双击 `start.bat` 或通过命令行运行 `python ipcc.py` 命令即可开始处理
 
+   - linux系统可以通过命令行运行 `python3 ipcc.py` 命令即可开始处理
+
 4. 等待脚本执行完毕
 
-5. 打包完成的的 `ipcc` 文件将存储于 `ipcc` 目录下的 `ipsw` 固件同名文件夹中
+5. 打包完成的 `ipcc` 文件将存储于 `ipcc` 目录下的 `ipsw` 固件同名文件夹中
 
 # 四、注意
 
